@@ -6,7 +6,8 @@ import android.content.SharedPreferences
 class Group(val name: String, val folder: Boolean, val pkgs: MutableList<String>)
 
 object Store {
-    const val MAX_DOCK = 5
+    const val MAX_DOCK = 6
+    const val MAX_GRID = 9
     private lateinit var prefs: SharedPreferences
 
     fun init(c: Context) {
@@ -18,6 +19,9 @@ object Store {
 
     fun favorites(): MutableList<String> = list("favorites")
     fun saveFavorites(v: List<String>) { prefs.edit().putString("favorites", v.joinToString(",")).apply() }
+
+    fun grid(): MutableList<String> = list("grid")
+    fun saveGrid(v: List<String>) { prefs.edit().putString("grid", v.joinToString(",")).apply() }
 
     fun hidden(): MutableSet<String> = prefs.getStringSet("hidden", emptySet()).orEmpty().toMutableSet()
     fun saveHidden(v: Set<String>) { prefs.edit().putStringSet("hidden", v).apply() }
