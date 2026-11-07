@@ -352,13 +352,9 @@ class MainActivity : Activity() {
         for (pkg in Store.favorites().filter { p -> allApps.any { it.pkg == p } }) {
             val app = allApps.first { it.pkg == pkg }
             val n = Badges.counts[pkg] ?: 0
-            val swipe = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-                    if (e1 == null) return false
-                    if (e2.y - e1.y < -150) Store.swipeApp(pkg)?.let { launch(it) }
-                    return false
-                }
-            })
+            val swipe = SwipeTracker { dx, dy ->
+                if (dy < -150 && abs(dy) > abs(dx)) Store.swipeApp(pkg)?.let { launch(it) }
+            }
             dock.addView(TextView(this).apply {
                 text = if (n > 0) "${app.label.take(9)} •$n" else app.label.take(10)
                 textSize = 13f
@@ -368,7 +364,7 @@ class MainActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 setOnClickListener { launch(pkg) }
                 setOnLongClickListener { showDockMenu(pkg); true }
-                setOnTouchListener { _, e -> swipe.onTouchEvent(e); false }
+                setOnTouchListener { _, e -> swipe.onEvent(e); false }
             })
         }
     }
@@ -586,15 +582,11 @@ class MainActivity : Activity() {
     // ---------- home gestures ----------
 
     private fun attachHomeGestures() {
+        val swipe = SwipeTracker { dx, dy ->
+            if (abs(dy) >= 150 && abs(dy) > abs(dx)) runGesture(if (dy < 0) "up" else "down")
+        }
         val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-                if (e1 == null) return false
-                val dy = e2.y - e1.y
-                val dx = e2.x - e1.x
-                if (abs(dy) < 150 || abs(dy) < abs(dx)) return false
-                runGesture(if (dy < 0) "up" else "down")
-                return true
-            }
+            override fun onDown(e: MotionEvent): Boolean = true
 
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 runGesture("double")
@@ -621,6 +613,7 @@ class MainActivity : Activity() {
             }
         })
         root.setOnTouchListener { _, e ->
+            swipe.onEvent(e)
             sd.onTouchEvent(e)
             gd.onTouchEvent(e)
             true
@@ -706,5 +699,20 @@ class MainActivity : Activity() {
         a == "lock" -> "Lock screen"
         a.startsWith("app:") -> allApps.firstOrNull { it.pkg == a.removePrefix("app:") }?.label ?: "App"
         else -> "Nothing"
+    }
+}
+
+private class SwipeTracker(private val onSwipe: (dx: Float, dy: Float) -> Unit) {
+    private var x0 = 0f
+    private var y0 = 0f
+
+    fun onEvent(e: MotionEvent) {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                x0 = e.x
+                y0 = e.y
+            }
+            MotionEvent.ACTION_UP -> onSwipe(e.x - x0, e.y - y0)
+        }
     }
 }
