@@ -353,8 +353,8 @@ class MainActivity : Activity() {
             val app = allApps.first { it.pkg == pkg }
             val n = Badges.counts[pkg] ?: 0
             val swipe = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onFling(e1: MotionEvent?, e2: MotionEvent?, vx: Float, vy: Float): Boolean {
-                    if (e1 == null || e2 == null) return false
+                override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+                    if (e1 == null) return false
                     if (e2.y - e1.y < -150) Store.swipeApp(pkg)?.let { launch(it) }
                     return false
                 }
@@ -587,8 +587,8 @@ class MainActivity : Activity() {
 
     private fun attachHomeGestures() {
         val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent?, vx: Float, vy: Float): Boolean {
-                if (e1 == null || e2 == null) return false
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+                if (e1 == null) return false
                 val dy = e2.y - e1.y
                 val dx = e2.x - e1.x
                 if (abs(dy) < 150 || abs(dy) < abs(dx)) return false
